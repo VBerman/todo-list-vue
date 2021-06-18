@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo list</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+
+    <script defer src="assets/js/vue.min.js"></script>
+    <script defer src="assets/js/main.js"></script>
+</head>
+
+<body>
+    <div id="app">
+
+        <!-- header -->
+        <div class="container">
+            <div class="row mt-4 mb-4">
+                <!-- search -->
+                <div class="col-12 col-lg-7">
+                    <div class="search-group">
+                        <div class="input-group position-relative pl-0 mt-4 mt-lg-0">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-transparent border-0">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                            <input class="form-control my-0 py-1 pl-5" v-model="findString" type="text" placeholder="Поиск по задачам">
+                        </div>
+                    </div>
+                </div>
+                <!-- / search -->
+                <!-- navigation -->
+                <div class="col-12 col-lg-5 mt-3 mt-lg-0 d-flex flex-column flex-sm-row align-items-center justify-content-center justify-content-lg-end">
+                    <a href="#" class="link mr-sm-4 text-decoration-none" :class="{active: isCurrentList}" @click.prevent="isCurrentList = true">Активные</a>
+                    <a href="#" class="link text-decoration-none" :class="{active: !isCurrentList}" @click.prevent="isCurrentList = false">Выполненные</a>
+                </div>
+                <!-- / navigation -->
+            </div>
+        </div>
+        <!-- / header -->
+
+        <div class="container">
+            <button @click="addNew()" class="btn px-3 mb-3 py-2 rounded-pill btn-light">
+                <i class="fa fa-plus-circle text-muted mr-3" aria-hidden="true"></i>
+                Добавить задачу
+            </button>
+
+            <div class="day" v-for="day in unicDays">
+                <span>{{ getString(day) }}</span>
+
+                <!--:class="'task px-3 py-2 completed': item.showMode, 'task px-3 py-2': !item.showMode"-->
+                <div class="task px-3 py-2" :class="{completed: item.checked}" v-for="(item, index) in getTodoDay(day)" v-if="item.showMode">
+                    <div class="d-flex align-items-baseline">
+                        <div class="icon pr-2" @click="item.setAll()">
+                            <i class="fas fa-check"></i>
+                            <i class="far fa-circle"></i>
+                        </div>
+
+                        <input class="task-name" type="text" v-model="item.text" placeholder="Введите название">
+                        <span class="time ml-2"> {{ item.date }} {{ item.time }} </span>
+                        <i class="ml-2 fas fa-angle-down" @click="currentList.forEach(el => el.showMode = true); item.showMode = !item.showMode;"></i>
+                        <i class="ml-3 far fa-trash-alt" @click="app.delete(item)"></i>
+                    </div>
+                </div>
+                <!-- / задача c установленным временем -->
+                <!-- Развернутая задача с добавленными пунктами -->
+                <div class="task px-3 py-2 active" :class="{completed: item.checked}" v-else>
+                    <div class="d-flex align-items-baseline">
+                        <div class="icon pr-2" @click="item.setAll()">
+                            <i class="fas fa-check"></i>
+                            <i class="far fa-circle"></i>
+                        </div>
+                        <input class="task-name" type="text" v-model="item.text" placeholder="Введите название">
+                        <span class="time ml-2"> {{ item.date }} {{ item.time }} </span>
+                        <i class="ml-2 fas fa-angle-up" @click="item.showMode = !item.showMode"></i>
+                        <i class="ml-3 far fa-trash-alt" @click="app.delete(item)"></i>
+                    </div>
+                    <!-- Task details -->
+                    <div class="task-detail pl-4 pb-3">
+                        <div class="d-flex align-items-baseline mb-0 mt-2 mb-2" v-if="!item.showDate">
+                            <i class="fa fa-calendar-alt text-muted mr-3" aria-hidden="true"></i>
+                            <button class="btn px-3 py-2 rounded-pill btn-light" @click="item.showDate = !item.showDate">
+                                Добавить дату и время
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-baseline mb-0 mt-2 mb-2" v-else>
+                            <i class="fa fa-calendar-alt text-muted mr-3" aria-hidden="true"></i>
+                            <div class="w-100" style="">
+                                <div class="d-flex w-100">
+                                    <input type="date" :value="item.date" @blur="item.date = $event.target.value" class="form-control w-100">
+                                    <input type="time" v-model.lazy="item.time" class="form-control ml-2">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="subtasks" v-for="(subItem, subIndex) in item.elements">
+                            <!-- Подзадача -->
+                            <div class="task d-flex align-items-baseline" :class="{completed: subItem.checked}">
+                                <p class="text-muted mr-2 mb-0 mt-2 mb-2" role="button">
+                                    <!--<i class="fas fa-reply" aria-hidden="true"></i>-->
+                                </p>
+                                <div class="icon pr-2 ml-1" @click="subItem.checked = !subItem.checked">
+                                    <i class="fas fa-check"></i>
+                                    <i class="far fa-circle"></i>
+                                </div>
+                                <input class="task-name" type="text" placeholder="Введите название" v-model="subItem.text">
+                                <i class="ml-3 far fa-trash-alt" @click="item.elements.splice(subIndex, 1)"></i>
+                            </div>
+                            <!-- / Подзадача -->
+                        </div>
+                        <div>
+                            <button class="btn btn-sm ml-4 mt-2 btn-secondary" @click="item.elements.push(new BaseElement)">
+                                Добавить подзадачу
+                            </button>
+                        </div>
+                    </div>
+                    <!-- / Task details -->
+                </div>
+                <!-- / Развернутая задача с добавленными пунктами -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
